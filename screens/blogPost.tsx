@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -14,11 +14,27 @@ import {
 import { useNavigation } from '@react-navigation/native'; // Importing navigation hook
 
 import BlogPost from './post'; // Importing the BlogPost component
+import { signOut, onAuthStateChanged } from 'firebase/auth'; // Update import
+import { auth } from '../FirebaseConfig';
 
 const BlogPostTemplate = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true); // Initialize loading as true
   const [refreshing, setRefreshing] = useState(false); // Initialize refreshing as false
+  const [displayName, setDisplayName] = useState('');
+  useEffect(() => {
+    // Check if user is logged in
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      if (user) {
+        setDisplayName(user.displayName.toUpperCase()); // Displaying in uppercase
+        setLoading(false); // User is logged in, stop loading
+      } else {
+        // User is not logged in, navigate to login page
+        navigation.navigate('Login');
+      }
+    });
+    return unsubscribe; // Cleanup on unmount
+  }, []);
 
   const drawerRef = React.useRef(null);
 
@@ -26,7 +42,7 @@ const BlogPostTemplate = () => {
     drawerRef.current.openDrawer();
   };
 
-  const navigateToPage = (pageName) => {
+  const navigateToPage = pageName => {
     // Navigation logic to redirect to specific pages
     navigation.navigate(pageName);
     drawerRef.current.closeDrawer();
@@ -40,12 +56,26 @@ const BlogPostTemplate = () => {
   }, []);
 
   const onRefresh = () => {
+    setLoading(true);
     setRefreshing(true);
     // Simulate refreshing data
     setTimeout(() => {
       setLoading(false);
       setRefreshing(false);
     }, 2000); // Simulated delay of 2 seconds
+  };
+
+  const handleLogout = () => {
+    signOut(auth)
+      .then(() => {
+        // Sign-out successful.
+        navigation.navigate('Login'); // Redirect to blog page
+        console.log('Signed out successfully');
+      })
+      .catch(error => {
+        console.log(error);
+        // An error happened.
+      });
   };
 
   return (
@@ -65,7 +95,7 @@ const BlogPostTemplate = () => {
                 source={require('../assets/images/pp.jpg')}
                 style={styles.profilePicture}
               />
-              <Text style={styles.profileName}>John Doe</Text>
+              <Text style={styles.profileName}>{displayName}</Text>
             </View>
           </View>
           <View style={styles.divider} />
@@ -90,6 +120,11 @@ const BlogPostTemplate = () => {
               <Text style={styles.drawerIcon}>✉️</Text> Contact
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.drawerItem} onPress={handleLogout}>
+            <Text style={styles.drawerText}>
+              <Text style={styles.drawerIcon} /> Sign Out
+            </Text>
+          </TouchableOpacity>
           {/* Additional drawer items */}
         </View>
       )}>
@@ -105,7 +140,7 @@ const BlogPostTemplate = () => {
               <Text style={styles.drawerIcon}>☰</Text>
             </TouchableOpacity>
             <Text style={styles.heading}>Explore Our Blog</Text>
-            <View style={styles.placeholder}></View>
+            <View style={styles.placeholder} />
           </View>
           {loading ? (
             <ActivityIndicator size="large" color="#0000ff" />
@@ -203,6 +238,7 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 18,
+    textTransform: 'uppercase', // Displaying text in uppercase
   },
   divider: {
     borderBottomColor: '#ccc',

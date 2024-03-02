@@ -1,28 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  TextInput,
-  Button,
-  StyleSheet,
-  Alert,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Keyboard,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, TextInput, Button, StyleSheet, Alert, Text, Image, TouchableOpacity, ScrollView, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import app from '../FirebaseConfig'; 
+import LogoImage from '../assets/images/logo.png'; 
+import FacebookLogo from '../assets/images/facebook_logo.png'; 
+import GoogleLogo from '../assets/images/google_logo.png'; 
+import Icon from 'react-native-vector-icons/FontAwesome'; 
 
-import LogoImage from '../assets/images/logo.png';
-import FacebookLogo from '../assets/images/facebook_logo.png';
-import GoogleLogo from '../assets/images/google_logo.png';
+const auth = getAuth(app);
 
 const LoginScreen = () => {
   const navigation = useNavigation();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -44,10 +38,16 @@ const LoginScreen = () => {
     };
   }, []);
 
-  const handleLogin = () => {
-    if (username === 'admin' && password === 'abir') {
-      Alert.alert('Success', 'Logged in successfully');
-    } else {
+  const handleLogin = async () => {
+    try {
+      const response = await signInWithEmailAndPassword(auth, email, password);
+      Alert.alert(
+        'Success',
+        'Logged in successfully ' + response.user.email,
+      );
+      navigation.navigate('Blog'); 
+    } catch (error) {
+      console.error('Login failed:', error);
       Alert.alert('Error', 'Invalid username or password');
     }
   };
@@ -57,13 +57,11 @@ const LoginScreen = () => {
   };
 
   const handleFacebookLogin = () => {
-    // Logic to handle Facebook login
-    // You can use libraries like React Native FBSDK for Facebook login
+    // Implement Facebook login logic
   };
 
   const handleGoogleLogin = () => {
-    // Logic to handle Google login
-    // You can use libraries like React Native Google Sign-In for Google login
+    // Implement Google login logic
   };
 
   return (
@@ -72,19 +70,35 @@ const LoginScreen = () => {
       keyboardShouldPersistTaps="handled">
       <View style={styles.content}>
         <Image source={LogoImage} style={styles.logo} />
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          onChangeText={(text) => setUsername(text)}
-          value={username}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          onChangeText={(text) => setPassword(text)}
-          value={password}
-          secureTextEntry
-        />
+        <View style={styles.inputContainer}>
+          <Icon name="user" size={20} color="#aaa" style={styles.icon} />
+          <View style={styles.dividerLeft}></View>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            onChangeText={text => setEmail(text)}
+            value={email}
+            keyboardType="email-address"
+          />
+        </View>
+        <View style={styles.passwordInputContainer}>
+          <Icon name="lock" size={20} color="#aaa" style={styles.icon} />
+          <View style={styles.dividerLeft}></View>
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            onChangeText={text => setPassword(text)}
+            value={password}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Icon
+              name={showPassword ? 'eye-slash' : 'eye'}
+              size={20}
+              color="#aaa"
+            />
+          </TouchableOpacity>
+        </View>
         <View style={styles.buttonContainer}>
           <Button title="Login" onPress={handleLogin} />
         </View>
@@ -92,9 +106,9 @@ const LoginScreen = () => {
           <Text style={styles.link}>Forget Password?</Text>
         </TouchableOpacity>
         <View style={styles.orContainer}>
-          <View style={styles.divider}></View>
+          <View style={styles.divider} />
           <Text style={styles.orText}>Or login with</Text>
-          <View style={styles.divider}></View>
+          <View style={styles.divider} />
         </View>
         <View style={styles.socialLoginContainer}>
           <TouchableOpacity onPress={handleFacebookLogin}>
@@ -128,6 +142,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '80%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '80%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  icon: {
+    width: 20,
+    textAlign: 'center',
+    marginRight: 10,
+  },
+  dividerLeft: {
+    width: 1,
+    height: '100%',
+    backgroundColor: '#ccc',
+    marginRight: 5,
   },
   createAccountContainer: {
     marginBottom: 20,
@@ -168,14 +213,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     resizeMode: 'contain',
   },
-  input: {
+  passwordInput: {
+    flex: 1,
     height: 40,
-    width: '80%',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+  },
+  input: {
+    flex: 1,
+    height: 40,
   },
   link: {
     marginTop: 10,
