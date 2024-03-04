@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,87 +9,136 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  Animated,
+  Easing,
+  ToastAndroid,
 } from 'react-native';
-
-import { useNavigation } from '@react-navigation/native'; // Importing navigation hook
-
-import BlogPost from './post'; // Importing the BlogPost component
-import { signOut, onAuthStateChanged } from 'firebase/auth'; // Update import
+import { useNavigation } from '@react-navigation/native';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../FirebaseConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage for persistent storage
+import Icon from 'react-native-vector-icons/Ionicons';
+import LinearGradient from 'react-native-linear-gradient';
+import BlogPost from './post';
+import { showToast } from '../App';
 
 const BlogPostTemplate = () => {
   const navigation = useNavigation();
-  const [loading, setLoading] = useState(true); // Initialize loading as true
-  const [refreshing, setRefreshing] = useState(false); // Initialize refreshing as false
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [drawerAnimation] = useState(new Animated.Value(0));
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // New state to track login status
+
   useEffect(() => {
-    // Check if user is logged in
+    checkLoginStatus(); // Check login status when component mounts
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
       if (user) {
-        setDisplayName(user.displayName.toUpperCase()); // Displaying in uppercase
-        setLoading(false); // User is logged in, stop loading
+        setDisplayName(user.displayName.toUpperCase());
+        setLoading(false);
+        setIsLoggedIn(true); // User is logged in
       } else {
-        // User is not logged in, navigate to login page
+        setIsLoggedIn(false); // User is not logged in
+        setLoading(false);
         navigation.navigate('Login');
       }
     });
-    return unsubscribe; // Cleanup on unmount
+    return unsubscribe;
   }, []);
+
+  const checkLoginStatus = async () => {
+    try {
+      const userToken = await AsyncStorage.getItem('userToken');
+      if (userToken !== null) {
+        setIsLoggedIn(true);
+      }
+    } catch (error) {
+      console.error('Error checking login status:', error);
+    }
+  };
 
   const drawerRef = React.useRef(null);
 
   const openDrawer = () => {
     drawerRef.current.openDrawer();
+    animateDrawer(1); // Open drawer animation
   };
 
-  const navigateToPage = pageName => {
-    // Navigation logic to redirect to specific pages
-    navigation.navigate(pageName);
-    drawerRef.current.closeDrawer();
+  const closeDrawer = () => {
+    animateDrawer(0); // Close drawer animation
+    setTimeout(() => {
+      drawerRef.current.closeDrawer();
+    }, 300); // Wait for animation to finish before closing drawer
   };
 
-  // Simulate data loading delay
+  const animateDrawer = toValue => {
+    Animated.timing(drawerAnimation, {
+      toValue: toValue,
+      duration: 300,
+      easing: Easing.ease,
+      useNativeDriver: false,
+    }).start();
+  };
+
   useEffect(() => {
     setTimeout(() => {
       setLoading(false);
-    }, 2000); // Simulated delay of 2 seconds
+    }, 2000);
   }, []);
 
   const onRefresh = () => {
     setLoading(true);
     setRefreshing(true);
-    // Simulate refreshing data
     setTimeout(() => {
       setLoading(false);
       setRefreshing(false);
-    }, 2000); // Simulated delay of 2 seconds
+    }, 2000);
   };
 
   const handleLogout = () => {
     signOut(auth)
       .then(() => {
-        // Sign-out successful.
-        navigation.navigate('Login'); // Redirect to blog page
-        console.log('Signed out successfully');
+        AsyncStorage.removeItem('userToken'); // Clear user token from AsyncStorage
+        setIsLoggedIn(false);
+        navigation.navigate('Login');
+        // showToast('success', 'Signed out successfully','');
+        ToastAndroid.show("Signed out successfully", ToastAndroid.LONG);
       })
       .catch(error => {
         console.log(error);
-        // An error happened.
       });
   };
 
+  const drawerTranslateX = drawerAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 250], // Adjust this value according to your drawer width
+  });
+
+  const navigateToPage = pageName => {
+    // Navigate to the page
+  };
+
   return (
-    <DrawerLayoutAndroid
+    {isLoggedIn} && <DrawerLayoutAndroid
       ref={drawerRef}
       drawerWidth={250}
       drawerPosition="left"
+      onDrawerOpen={openDrawer}
+      onDrawerClose={closeDrawer}
       renderNavigationView={() => (
         <View style={styles.drawerContainer}>
           <View style={styles.drawerHeader}>
-            <Image
-              source={require('../assets/images/background.webp')}
-              style={styles.headerImage}
-            />
+            <LinearGradient
+              colors={['#4c669f', '#3b5998', '#192f6a']}
+              style={styles.headerImage}>
+              <Image
+                source={require('../assets/images/background.webp')}
+                style={styles.headerImage}
+              />
+            </LinearGradient>
             <View style={styles.profileContainer}>
               <Image
                 source={require('../assets/images/pp.jpg')}
@@ -101,65 +150,89 @@ const BlogPostTemplate = () => {
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.drawerItem}
-            onPress={() => navigateToPage('Settings')}>
-            <Text style={styles.drawerText}>
-              <Text style={styles.drawerIcon}>⚙️</Text> Settings
-            </Text>
+            onPress={() => navigation.navigate('Setting')}>
+            <Icon name="settings-outline" size={20} style={styles.drawerIcon} />
+            <Text style={styles.drawerText}>Settings</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.drawerItem}
             onPress={() => navigateToPage('About')}>
-            <Text style={styles.drawerText}>
-              <Text style={styles.drawerIcon}>ℹ️</Text> About Us
-            </Text>
+            <Icon
+              name="information-circle-outline"
+              size={20}
+              style={styles.drawerIcon}
+            />
+            <Text style={styles.drawerText}>About Us</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.drawerItem}
             onPress={() => navigateToPage('Contact')}>
-            <Text style={styles.drawerText}>
-              <Text style={styles.drawerIcon}>✉️</Text> Contact
-            </Text>
+            <Icon name="mail-outline" size={20} style={styles.drawerIcon} />
+            <Text style={styles.drawerText}>Contact</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.drawerItem} onPress={handleLogout}>
-            <Text style={styles.drawerText}>
-              <Text style={styles.drawerIcon} /> Sign Out
-            </Text>
-          </TouchableOpacity>
-          {/* Additional drawer items */}
+          <View style={styles.drawerItemBottom}>
+            <TouchableOpacity
+              style={styles.drawerItemBottomButton}
+              onPress={handleLogout}>
+              <LinearGradient
+                colors={['#4c669f', '#3b5998', '#192f6a']}
+                style={styles.signOutButton}>
+                <Icon
+                  name="log-out-outline"
+                  size={20}
+                  color="#fff"
+                  style={styles.drawerIcon}
+                />
+                <Text style={[styles.drawerText, { color: '#fff' }]}>
+                  Sign Out
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       )}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={openDrawer} style={styles.drawerToggle}>
-              <Text style={styles.drawerIcon}>☰</Text>
-            </TouchableOpacity>
-            <Text style={styles.heading}>Explore Our Blog</Text>
-            <View style={styles.placeholder} />
+      <Animated.View
+        style={[
+          styles.container,
+          { transform: [{ translateX: drawerTranslateX }] },
+        ]}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
+          <View style={styles.content}>
+            <LinearGradient
+              colors={['#4c669f', '#3b5998', '#192f6a']}
+              style={styles.header}>
+              <TouchableOpacity
+                onPress={openDrawer}
+                style={styles.drawerToggle}>
+                <Icon name="menu-outline" size={30} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.heading}>Explore Our Blog</Text>
+              <TouchableOpacity style={styles.placeholder} />
+            </LinearGradient>
+            {loading ? (
+              <ActivityIndicator size="large" color="#0000ff" />
+            ) : (
+              <View style={styles.blogContainer}>
+                <BlogPost
+                  image={require('../assets/images/post1.jpg')}
+                  title="Title of Post 1"
+                  description="There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text. All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary, making this the first true generator on the Internet. It uses a dictionary of over 200 Latin words, combined with a handful of model sentence structures, to generate Lorem Ipsum which looks reasonable. The generated Lorem Ipsum is therefore always free from repetition, injected humour, or non-characteristic words etc."
+                />
+                <BlogPost
+                  image={require('../assets/images/post2.jpg')}
+                  title="Title of Post 2"
+                  description="Description of Post 2. Proin ullamcorper tellus eu mi suscipit, quis gravida velit hendrerit."
+                />
+              </View>
+            )}
           </View>
-          {loading ? (
-            <ActivityIndicator size="large" color="#0000ff" />
-          ) : (
-            <View style={styles.blogContainer}>
-              <BlogPost
-                image={require('../assets/images/post1.jpg')}
-                title="Title of Post 1"
-                description="There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text. All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary, making this the first true generator on the Internet. It uses a dictionary of over 200 Latin words, combined with a handful of model sentence structures, to generate Lorem Ipsum which looks reasonable. The generated Lorem Ipsum is therefore always free from repetition, injected humour, or non-characteristic words etc."
-              />
-              <BlogPost
-                image={require('../assets/images/post2.jpg')}
-                title="Title of Post 2"
-                description="Description of Post 2. Proin ullamcorper tellus eu mi suscipit, quis gravida velit hendrerit."
-              />
-            </View>
-          )}
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </Animated.View>
     </DrawerLayoutAndroid>
   );
 };
@@ -168,47 +241,60 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#f0f0f0',
-    paddingTop: 20,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 10,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
   },
   heading: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
+    color: '#fff',
   },
   blogContainer: {
-    flexDirection: 'column', // Display one post per row
-    justifyContent: 'flex-start', // Align posts from top
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    width: '100%',
+    paddingHorizontal: 5,
   },
   drawerContainer: {
     flex: 1,
-    backgroundColor: '#f0f0f0', // Example background color
+    backgroundColor: '#f0f0f0',
     paddingTop: 0,
     paddingHorizontal: 0,
   },
   drawerItem: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  drawerItemBottom: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingBottom: 5,
+  },
+  drawerItemBottomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 5,
   },
   drawerText: {
-    fontSize: 16,
-    marginLeft: 10,
-    color: '#333', // Example text color
+    fontSize: 18,
+    marginLeft: 20,
   },
   drawerIcon: {
-    fontSize: 16,
-    marginRight: 5,
+    marginRight: 10,
   },
   drawerToggle: {
     marginRight: 10,
@@ -238,12 +324,19 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 18,
-    textTransform: 'uppercase', // Displaying text in uppercase
+    textTransform: 'uppercase',
   },
   divider: {
     borderBottomColor: '#ccc',
     borderBottomWidth: 1,
-    marginBottom: 20,
+  },
+  signOutButton: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 5,
   },
 });
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Alert, Text, Image, TouchableOpacity, ScrollView, Keyboard } from 'react-native';
+import { View, TextInput, Button, StyleSheet, Alert, Text, Image, TouchableOpacity, ScrollView, Keyboard, ToastAndroid } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import app from '../FirebaseConfig'; 
@@ -7,6 +7,7 @@ import LogoImage from '../assets/images/logo.png';
 import FacebookLogo from '../assets/images/facebook_logo.png'; 
 import GoogleLogo from '../assets/images/google_logo.png'; 
 import Icon from 'react-native-vector-icons/FontAwesome'; 
+import { showToast } from '../App';
 
 const auth = getAuth(app);
 
@@ -41,14 +42,13 @@ const LoginScreen = () => {
   const handleLogin = async () => {
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert(
-        'Success',
-        'Logged in successfully ' + response.user.email,
-      );
+      // showToast('success', 'Logged in successfully','');
+      ToastAndroid.show("Logged in successfully", ToastAndroid.LONG);
       navigation.navigate('Blog'); 
     } catch (error) {
-      console.error('Login failed:', error);
-      Alert.alert('Error', 'Invalid username or password');
+      // console.error('Login failed:', error);
+      // Alert.alert('Error', 'Invalid username or password');
+      showToast('error', 'Invalid username or password','');
     }
   };
 

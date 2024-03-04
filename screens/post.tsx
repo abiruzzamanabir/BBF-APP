@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const BlogPost = ({ image, title, description }) => {
   const [showMore, setShowMore] = useState(false);
+
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, [showMore]);
 
   return (
     <View style={styles.container}>

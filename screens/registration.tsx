@@ -17,6 +17,7 @@ import { getFirestore, collection, doc, setDoc } from 'firebase/firestore';
 import LogoImage from '../assets/images/logo.png';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { showToast } from '../App';
 
 const auth = getAuth(app);
 const firestore = getFirestore(app);
@@ -55,7 +56,8 @@ const RegistrationScreen = () => {
   const handleRegister = async () => {
     if (fullName && email && phone && password && confirmPassword) {
       if (password !== confirmPassword) {
-        Alert.alert('Error', 'Passwords do not match');
+        // Alert.alert('Error', 'Passwords do not match');
+        showToast('error', 'Passwords do not match','');
       } else {
         try {
           const response = await createUserWithEmailAndPassword(auth, email, password);
@@ -64,14 +66,19 @@ const RegistrationScreen = () => {
             phoneNumber: phone
           });
   
-          Alert.alert('Success', 'Sign up successful');
+          // Alert.alert('Success', 'Sign up successful');
+          showToast('success', 'Sign up successful','');
           navigation.navigate('Login');
         } catch (error) {
-          Alert.alert('Error', error.message);
+          // Alert.alert('Error', error.message);
+          if(error.message==='Firebase: Error (auth/email-already-in-use).'){
+            showToast('error', 'User Already Exist!','');
+          }
         }
       }
     } else {
-      Alert.alert('Error', 'Please fill all fields');
+      // Alert.alert('Error', 'Please fill all fields');
+      showToast('error', 'Please fill all fields','');
     }
   };
 
