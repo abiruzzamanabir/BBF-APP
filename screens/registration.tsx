@@ -1,26 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  TextInput,
-  Button,
-  StyleSheet,
-  Alert,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Keyboard,
-} from 'react-native';
+import { View, TextInput, StyleSheet, Text, Image, TouchableOpacity, ScrollView, Keyboard, ActivityIndicator } from 'react-native';
+import { Button, Snackbar } from 'react-native-paper';
 import app from '../FirebaseConfig';
+import LogoImage from '../assets/images/logo.png'; 
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc } from 'firebase/firestore'; 
-import LogoImage from '../assets/images/logo.png';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { showToast } from '../App';
 
 const auth = getAuth(app);
-const firestore = getFirestore(app);
 
 const RegistrationScreen = () => {
   const navigation = useNavigation();
@@ -32,6 +20,9 @@ const RegistrationScreen = () => {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [loading, setLoading] = useState(false); // State variable for loading indicator
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -56,29 +47,31 @@ const RegistrationScreen = () => {
   const handleRegister = async () => {
     if (fullName && email && phone && password && confirmPassword) {
       if (password !== confirmPassword) {
-        // Alert.alert('Error', 'Passwords do not match');
-        showToast('error', 'Passwords do not match','');
+        setSnackbarMessage('Passwords do not match');
+        setSnackbarVisible(true);
       } else {
+        setLoading(true); // Set loading to true when registration process starts
         try {
           const response = await createUserWithEmailAndPassword(auth, email, password);
           await updateProfile(auth.currentUser, {
             displayName: fullName,
             phoneNumber: phone
           });
-  
-          // Alert.alert('Success', 'Sign up successful');
-          showToast('success', 'Sign up successful','');
+          setSnackbarMessage('Sign up successful');
+          setSnackbarVisible(true);
           navigation.navigate('Login');
         } catch (error) {
-          // Alert.alert('Error', error.message);
-          if(error.message==='Firebase: Error (auth/email-already-in-use).'){
-            showToast('error', 'User Already Exist!','');
+          if(error.code === 'auth/email-already-in-use') {
+            setSnackbarMessage('User Already Exists');
+            setSnackbarVisible(true);
           }
+        } finally {
+          setLoading(false); // Set loading to false when registration process ends
         }
       }
     } else {
-      // Alert.alert('Error', 'Please fill all fields');
-      showToast('error', 'Please fill all fields','');
+      setSnackbarMessage('Please fill all fields');
+      setSnackbarVisible(true);
     }
   };
 
@@ -157,16 +150,25 @@ const RegistrationScreen = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.buttonContainer}>
-          <Button title="Register" onPress={handleRegister} />
+          <Button mode="contained" onPress={handleRegister} disabled={loading}>
+            {loading ? <ActivityIndicator color="white" /> : 'Register'} {/* Show loading indicator when loading */}
+          </Button>
         </View>
       </View>
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+      >
+        {snackbarMessage}
+      </Snackbar>
       {!keyboardVisible && (
-        <View style={styles.footer}>
-          <Text
-            style={styles.footerText}
-            onPress={() => navigation.push('Login')}>
+        <View style={styles.createAccountContainer}>
+          <Button
+            mode="outlined"
+            onPress={() => navigation.navigate('Login')}>
             Already have an account? Sign in
-          </Text>
+          </Button>
         </View>
       )}
     </ScrollView>
@@ -207,12 +209,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
     marginRight: 5,
   },
-  dividerRight: {
-    width: 1,
-    height: '100%',
-    backgroundColor: '#ccc',
-    marginRight: 40,
-  },
   icon: {
     width: 20,
     textAlign: 'center',
@@ -251,9 +247,11 @@ const styles = StyleSheet.create({
   footer: {
     marginBottom: 20,
   },
-  footerText: {
-    color: '#007BFF',
-    textDecorationLine: 'underline',
+  createAccountContainer: {
+    marginBottom: 20,
+    width: '80%',
+    borderRadius: 20,
+    overflow: 'hidden',
   },
 });
 

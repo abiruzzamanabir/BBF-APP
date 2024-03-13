@@ -1,13 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Alert, Text, Image, TouchableOpacity, ScrollView, Keyboard, ToastAndroid } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import app from '../FirebaseConfig'; 
-import LogoImage from '../assets/images/logo.png'; 
-import FacebookLogo from '../assets/images/facebook_logo.png'; 
-import GoogleLogo from '../assets/images/google_logo.png'; 
-import Icon from 'react-native-vector-icons/FontAwesome'; 
-import { showToast } from '../App';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  Text,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Keyboard,
+  ActivityIndicator,
+} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import {Button, Snackbar} from 'react-native-paper'; // Importing Button and Snackbar from React Native Paper
+import {getAuth, signInWithEmailAndPassword} from 'firebase/auth';
+import app from '../FirebaseConfig';
+import LogoImage from '../assets/images/logo.png';
+import FacebookLogo from '../assets/images/facebook_logo.png';
+import GoogleLogo from '../assets/images/google_logo.png';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const auth = getAuth(app);
 
@@ -18,19 +28,22 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [loading, setLoading] = useState(false); // State variable for loading indicator
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
       () => {
         setKeyboardVisible(true);
-      }
+      },
     );
     const keyboardDidHideListener = Keyboard.addListener(
       'keyboardDidHide',
       () => {
         setKeyboardVisible(false);
-      }
+      },
     );
 
     return () => {
@@ -40,16 +53,17 @@ const LoginScreen = () => {
   }, []);
 
   const handleLogin = async () => {
+    setLoading(true); // Set loading to true when login process starts
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
-      // showToast('success', 'Logged in successfully','');
-      ToastAndroid.show("Logged in successfully", ToastAndroid.LONG);
-      navigation.navigate('Blog'); 
+      setSnackbarMessage('Logged in successfully');
+      setSnackbarVisible(true);
+      navigation.navigate('Blog');
     } catch (error) {
-      // console.error('Login failed:', error);
-      // Alert.alert('Error', 'Invalid username or password');
-      showToast('error', 'Invalid username or password','');
+      setSnackbarMessage('Invalid username or password');
+      setSnackbarVisible(true);
     }
+    setLoading(false); // Set loading to false when login process ends
   };
 
   const handleForgetPassword = () => {
@@ -57,11 +71,13 @@ const LoginScreen = () => {
   };
 
   const handleFacebookLogin = () => {
-    // Implement Facebook login logic
+    setSnackbarMessage('Feature Will be Added Soon');
+    setSnackbarVisible(true);
   };
 
   const handleGoogleLogin = () => {
-    // Implement Google login logic
+    setSnackbarMessage('Feature Will be Added Soon');
+    setSnackbarVisible(true);
   };
 
   return (
@@ -71,7 +87,7 @@ const LoginScreen = () => {
       <View style={styles.content}>
         <Image source={LogoImage} style={styles.logo} />
         <View style={styles.inputContainer}>
-          <Icon name="user" size={20} color="#aaa" style={styles.icon} />
+          <Icon name="envelope" size={20} color="#aaa" style={styles.icon} />
           <View style={styles.dividerLeft}></View>
           <TextInput
             style={styles.input}
@@ -100,7 +116,12 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.buttonContainer}>
-          <Button title="Login" onPress={handleLogin} />
+          <Button mode="contained" onPress={handleLogin} disabled={loading}>
+            {' '}
+            {/* Disable button when loading */}
+            {loading ? <ActivityIndicator color="white" /> : 'Login'}{' '}
+            {/* Show loading indicator when loading */}
+          </Button>
         </View>
         <TouchableOpacity onPress={handleForgetPassword}>
           <Text style={styles.link}>Forget Password?</Text>
@@ -119,12 +140,19 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}>
+        {snackbarMessage}
+      </Snackbar>
       {!keyboardVisible && (
         <View style={styles.createAccountContainer}>
           <Button
-            title="Create Account"
-            onPress={() => navigation.navigate('Registration')}
-          />
+            mode="outlined"
+            onPress={() => navigation.navigate('Registration')}>
+            Create Account
+          </Button>
         </View>
       )}
     </ScrollView>

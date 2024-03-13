@@ -1,31 +1,28 @@
-import React from 'react';
-import {
-  View,
-  TextInput,
-  Button,
-  StyleSheet,
-  Alert,
-  Text,
-  Image,
-} from 'react-native';
-import {useNavigation} from '@react-navigation/native'; // Import useNavigation hook from React Navigation
+import React, { useState } from 'react';
+import { View, TextInput, StyleSheet, Text, Image, ActivityIndicator } from 'react-native';
+import { Button, Snackbar } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome icon
 
 import LogoImage from '../assets/images/logo.png';
 
 const ForgetPasswordScreen = () => {
-  const navigation = useNavigation(); // Initialize navigation object
-
-  const [email, setEmail] = React.useState('');
+  const navigation = useNavigation();
+  const [email, setEmail] = useState('');
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [loading, setLoading] = useState(false); // State variable for loading indicator
 
   const handleForgetPassword = () => {
     if (email.trim() === '') {
-      Alert.alert('Error', 'Please enter your email');
+      setSnackbarVisible(true);
     } else {
       // Here you can implement your logic to handle the forget password functionality
-      Alert.alert(
-        'Reset Password',
-        'Password reset instructions have been sent to your email.',
-      );
+      setLoading(true); // Set loading to true when password reset process starts
+      // Simulating password reset process with setTimeout
+      setTimeout(() => {
+        setLoading(false); // Set loading to false when password reset process ends
+        setSnackbarVisible(true);
+      }, 2000); // Example: 2 seconds delay
     }
   };
 
@@ -33,24 +30,35 @@ const ForgetPasswordScreen = () => {
     <View style={styles.container}>
       <View style={styles.content}>
         <Image source={LogoImage} style={styles.logo} />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          onChangeText={text => setEmail(text)}
-          value={email}
-          keyboardType="email-address"
-        />
+        <View style={styles.inputContainer}>
+          <Icon name="envelope" size={20} color="#aaa" style={styles.icon} />
+          <View style={styles.dividerLeft}></View>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            onChangeText={(text) => setEmail(text)}
+            value={email}
+            keyboardType="email-address"
+          />
+        </View>
         <View style={styles.buttonContainer}>
-          <Button title="Reset Password" onPress={handleForgetPassword} />
+          <Button mode="contained" onPress={handleForgetPassword} disabled={loading}>
+            {loading ? <ActivityIndicator color="white" /> : 'Reset Password'}
+          </Button>
         </View>
       </View>
       <View style={styles.footer}>
-        <Text
-          style={styles.footerText}
-          onPress={() => navigation.push('Login')}>
+        <Button onPress={() => navigation.navigate('Login')} mode="outlined">
           Back to Login
-        </Text>
+        </Button>
       </View>
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+      >
+        {email.trim() === '' ? 'Please enter your email' : 'Password reset instructions have been sent to your email.'}
+      </Snackbar>
     </View>
   );
 };
@@ -67,37 +75,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  loginContainer: {
-    marginTop: 20,
-    width: '80%',
-  },
   logo: {
     width: 150,
     height: 150,
     marginBottom: 20,
     resizeMode: 'contain',
   },
-  input: {
-    height: 40,
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     width: '80%',
     borderColor: '#ccc',
     borderWidth: 1,
     marginBottom: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     borderRadius: 10,
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    marginLeft: 10, // Add marginLeft to separate icon and input
+  },
+  icon: {
+    width: 20,
+    textAlign: 'center',
+    marginRight: 10,
   },
   footer: {
     marginBottom: 20,
-  },
-  footerText: {
-    color: '#007BFF',
-    textDecorationLine: 'underline',
+    width: '80%',
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   buttonContainer: {
     marginTop: 10,
     width: '80%',
     borderRadius: 20,
     overflow: 'hidden',
+  },
+  dividerLeft: {
+    width: 1,
+    height: '100%',
+    backgroundColor: '#ccc',
+    marginRight: 5,
   },
 });
 
