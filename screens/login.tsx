@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   TextInput,
@@ -10,9 +10,10 @@ import {
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import {Button, Snackbar} from 'react-native-paper'; // Importing Button and Snackbar from React Native Paper
-import {getAuth, signInWithEmailAndPassword} from 'firebase/auth';
+import { useNavigation } from '@react-navigation/native';
+import { Button, Snackbar } from 'react-native-paper';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import app from '../FirebaseConfig';
 import LogoImage from '../assets/images/logo.png';
 import FacebookLogo from '../assets/images/facebook_logo.png';
@@ -30,21 +31,39 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [loading, setLoading] = useState(false); // State variable for loading indicator
+  const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
       () => {
         setKeyboardVisible(true);
-      },
+      }
     );
     const keyboardDidHideListener = Keyboard.addListener(
       'keyboardDidHide',
       () => {
         setKeyboardVisible(false);
-      },
+      }
     );
+
+    // Check AsyncStorage for saved login details when component mounts
+    const checkSavedLoginDetails = async () => {
+      try {
+        const savedEmail = await AsyncStorage.getItem('email');
+        const savedPassword = await AsyncStorage.getItem('password');
+        if (savedEmail && savedPassword) {
+          setEmail(savedEmail);
+          setPassword(savedPassword);
+          setRememberMe(true); // Set rememberMe to true if details are found
+        }
+      } catch (error) {
+        console.log('Error retrieving login details:', error);
+      }
+    };
+
+    checkSavedLoginDetails();
 
     return () => {
       keyboardDidShowListener.remove();
@@ -53,7 +72,7 @@ const LoginScreen = () => {
   }, []);
 
   const handleLogin = async () => {
-    setLoading(true); // Set loading to true when login process starts
+    setLoading(true);
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
       setSnackbarMessage('Logged in successfully');
@@ -63,7 +82,7 @@ const LoginScreen = () => {
       setSnackbarMessage('Invalid username or password');
       setSnackbarVisible(true);
     }
-    setLoading(false); // Set loading to false when login process ends
+    setLoading(false);
   };
 
   const handleForgetPassword = () => {
@@ -78,6 +97,25 @@ const LoginScreen = () => {
   const handleGoogleLogin = () => {
     setSnackbarMessage('Feature Will be Added Soon');
     setSnackbarVisible(true);
+  };
+
+  const toggleRememberMe = async () => {
+    setRememberMe(!rememberMe);
+    if (!rememberMe) {
+      try {
+        await AsyncStorage.setItem('email', email);
+        await AsyncStorage.setItem('password', password);
+      } catch (error) {
+        console.log('Error saving login details:', error);
+      }
+    } else {
+      try {
+        await AsyncStorage.removeItem('email');
+        await AsyncStorage.removeItem('password');
+      } catch (error) {
+        console.log('Error removing login details:', error);
+      }
+    }
   };
 
   return (
@@ -117,11 +155,18 @@ const LoginScreen = () => {
         </View>
         <View style={styles.buttonContainer}>
           <Button mode="contained" onPress={handleLogin} disabled={loading}>
-            {' '}
-            {/* Disable button when loading */}
-            {loading ? <ActivityIndicator color="white" /> : 'Login'}{' '}
-            {/* Show loading indicator when loading */}
+            {loading ? <ActivityIndicator color="white" /> : 'Login'}
           </Button>
+        </View>
+        <View style={styles.rememberMeContainer}>
+          <TouchableOpacity onPress={toggleRememberMe} style={styles.rememberMe}>
+            <Icon
+              name={rememberMe ? 'check-square-o' : 'square-o'}
+              size={20}
+              color="#aaa"
+            />
+            <Text style={styles.rememberMeText}>Remember Me</Text>
+          </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={handleForgetPassword}>
           <Text style={styles.link}>Forget Password?</Text>
@@ -260,6 +305,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
   },
+rememberMeContainer: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  justifyContent: 'flex-start', // Align the checkbox to the start
+  width: '80%',
+  marginTop: 10,
+  paddingLeft: 10, // Add horizontal padding to adjust position
+},
+rememberMe: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+},
+rememberMeText: {
+  marginLeft: 5,
+},
+
+  
 });
 
 export default LoginScreen;
