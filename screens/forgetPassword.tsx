@@ -1,29 +1,44 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, Image, ActivityIndicator } from 'react-native';
+import { View, TextInput, StyleSheet, Text, Image, ActivityIndicator, ToastAndroid } from 'react-native';
 import { Button, Snackbar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome icon
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 
 import LogoImage from '../assets/images/logo.png';
+import { auth } from '../FirebaseConfig';
 
 const ForgetPasswordScreen = () => {
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [loading, setLoading] = useState(false); // State variable for loading indicator
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleForgetPassword = () => {
     if (email.trim() === '') {
-      setSnackbarVisible(true);
+      displaySnackbar('Please enter your email');
     } else {
-      // Here you can implement your logic to handle the forget password functionality
-      setLoading(true); // Set loading to true when password reset process starts
-      // Simulating password reset process with setTimeout
-      setTimeout(() => {
-        setLoading(false); // Set loading to false when password reset process ends
-        setSnackbarVisible(true);
-      }, 2000); // Example: 2 seconds delay
+      setLoading(true);
+      sendPasswordResetEmail(auth, email)
+        .then(() => {
+          navigation.navigate('Login');
+          ToastAndroid.show(
+            'Password reset instructions have been sent to your email.',
+            ToastAndroid.LONG,
+          );
+        })
+        .catch((error) => {
+          console.error('Error sending password reset email:', error);
+          displaySnackbar('Failed to send reset email. Please try again later.');
+        })
+        .finally(() => setLoading(false));
     }
+  };
+
+  const displaySnackbar = (message) => {
+    setSnackbarMessage(message);
+    setSnackbarVisible(true);
   };
 
   return (
@@ -57,7 +72,7 @@ const ForgetPasswordScreen = () => {
         onDismiss={() => setSnackbarVisible(false)}
         duration={3000}
       >
-        {email.trim() === '' ? 'Please enter your email' : 'Password reset instructions have been sent to your email.'}
+        {snackbarMessage}
       </Snackbar>
     </View>
   );
@@ -94,7 +109,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 40,
-    marginLeft: 10, // Add marginLeft to separate icon and input
+    marginLeft: 10,
   },
   icon: {
     width: 20,

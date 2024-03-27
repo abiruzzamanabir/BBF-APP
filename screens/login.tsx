@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Snackbar } from 'react-native-paper';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import app from '../FirebaseConfig';
 import LogoImage from '../assets/images/logo.png';
@@ -75,9 +75,15 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
-      setSnackbarMessage('Logged in successfully');
-      setSnackbarVisible(true);
-      navigation.navigate('Blog');
+      if (auth.currentUser && auth.currentUser.emailVerified) {
+        setSnackbarMessage('Logged in successfully');
+        setSnackbarVisible(true);
+        navigation.navigate('Blog');
+      } else {
+        setSnackbarMessage('Please verify your email first.');
+        setSnackbarVisible(true);
+        await signOut(auth); // Log out the user
+      }
     } catch (error) {
       setSnackbarMessage('Invalid username or password');
       setSnackbarVisible(true);

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, StyleSheet, Text, Image, TouchableOpacity, ScrollView, Keyboard, ActivityIndicator } from 'react-native';
+import { View, TextInput, StyleSheet, Text, Image, TouchableOpacity, ScrollView, Keyboard, ActivityIndicator, ToastAndroid } from 'react-native';
 import { Button, Snackbar } from 'react-native-paper';
 import app from '../FirebaseConfig';
 import LogoImage from '../assets/images/logo.png'; 
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { showToast } from '../App';
@@ -57,9 +57,12 @@ const RegistrationScreen = () => {
             displayName: fullName,
             phoneNumber: phone
           });
-          setSnackbarMessage('Sign up successful');
-          setSnackbarVisible(true);
+          // setSnackbarMessage('Sign up successful. Verification email sent.');
+          // setSnackbarVisible(true);
+          await sendEmailVerification(auth.currentUser); // Send verification email
           navigation.navigate('Login');
+          ToastAndroid.show('Sign up successful. Verification email sent to your email.', ToastAndroid.LONG);
+
         } catch (error) {
           if(error.code === 'auth/email-already-in-use') {
             setSnackbarMessage('User Already Exists');
@@ -74,6 +77,7 @@ const RegistrationScreen = () => {
       setSnackbarVisible(true);
     }
   };
+  
 
   return (
     <ScrollView

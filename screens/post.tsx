@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, Image, StyleSheet, LayoutAnimation, Platform, UIManager, useWindowDimensions, TouchableOpacity } from 'react-native';
+import HTML from 'react-native-render-html';
+import { IconButton } from 'react-native-paper'; // Import IconButton from React Native Paper
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -8,23 +10,33 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const BlogPost = ({ image, title, description }) => {
   const [showMore, setShowMore] = useState(false);
+  const truncatedDescription = `${description.substring(0, 40)}...`;
+  const fullDescription = showMore ? description : truncatedDescription;
 
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, [showMore]);
 
+  const { width } = useWindowDimensions();
+
+  const toggleDescription = () => {
+    setShowMore(!showMore);
+  };
+
   return (
     <View style={styles.container}>
       <Image source={image} style={styles.image} />
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>
-        {showMore ? description : `${description.substring(0, 70)}...`}
-        {!showMore && (
-          <Text onPress={() => setShowMore(true)} style={styles.readMore}>
-            Read More
-          </Text>
-        )}
-      </Text>
+      <HTML contentWidth={width} source={{ html: `<div style="text-align: center;">${fullDescription}</div>` }} />
+      {description.length > 40 && (
+        <View style={styles.showMoreButtonContainer}>
+          <TouchableOpacity onPress={toggleDescription} style={styles.showMoreButton}>
+            <Text style={styles.showMoreButtonText}>
+              {showMore ? 'Show Less' : 'Show More'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -35,7 +47,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F8F8F8',
     borderRadius: 20,
-    padding: 15,
+    padding: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -49,25 +61,26 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
     borderRadius: 20,
-    marginBottom: 15,
+    marginBottom: 10,
     resizeMode: 'cover',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
     textAlign: 'center',
     color: '#333',
   },
-  description: {
-    marginBottom: 15,
-    textAlign: 'justify',
-    color: '#666',
+  showMoreButtonContainer: {
+    width: '100%',
+    alignItems: 'center', // Center the button horizontally
   },
-  readMore: {
+  showMoreButton: {
+    paddingVertical: 5,
+  },
+  showMoreButtonText: {
     color: '#007BFF',
     fontWeight: 'bold',
-    marginTop: 5,
+    textAlign: 'center',
   },
 });
 

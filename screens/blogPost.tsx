@@ -272,12 +272,6 @@ const BlogPostTemplate = () => {
         <View style={styles.divider} />
         <TouchableOpacity
           style={styles.drawerItem}
-          onPress={() => navigation.navigate('Setting')}>
-          <Icon name="settings-outline" size={20} style={styles.drawerIcon} />
-          <Text style={styles.drawerText}>Settings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.drawerItem}
           onPress={() => navigation.navigate('About')}>
           <Icon
             name="information-circle-outline"
@@ -297,6 +291,12 @@ const BlogPostTemplate = () => {
           onPress={() => navigation.navigate('Contact')}>
           <Icon name="mail-outline" size={20} style={styles.drawerIcon} />
           <Text style={styles.drawerText}>Contact</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.drawerItem}
+          onPress={() => navigation.navigate('Setting')}>
+          <Icon name="settings-outline" size={20} style={styles.drawerIcon} />
+          <Text style={styles.drawerText}>Settings</Text>
         </TouchableOpacity>
         <View style={styles.drawerItemBottom}>
           <TouchableOpacity
@@ -379,7 +379,7 @@ const BlogPostTemplate = () => {
                 </LinearGradient>
                 <View style={styles.content}>
                   {loading ? (
-                    <View style={styles.overlay}>
+                    <View>
                       <ActivityIndicator size="large" color="#fff" />
                       <Text style={styles.overlayText}>Loading Posts...</Text>
                     </View>
@@ -390,7 +390,7 @@ const BlogPostTemplate = () => {
                           key={index}
                           image={{ uri: post.photo_url }}
                           title={post.title}
-                          description={post.description}
+                          description={post.content_html}
                         />
                       ))}
                       {renderLoadMoreMessage()}
@@ -537,6 +537,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     marginTop: 10,
+    textAlign: 'center',
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
